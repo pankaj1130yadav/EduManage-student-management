@@ -1,0 +1,201 @@
+// Prisma schema for EduManage — Student Management System
+// PostgreSQL provider; migrations live in prisma/migrations/
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  TEACHER
+  STUDENT
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LEAVE
+}
+
+enum FeeStatus {
+  PENDING
+  PAID
+  OVERDUE
+}
+
+enum PaymentMode {
+  CASH
+  UPI
+  BANK_TRANSFER
+  CHEQUE
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  role         Role
+  name         String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  teacherProfile Teacher?
+  studentProfile Student?
+
+  @@map("users")
+}
+
+model Class {
+  id          String   @id @default(cuid())
+  name        String   // e.g. "Class 10-A"
+  grade       String   // e.g. "10"
+  section     String   // e.g. "A"
+  academicYear String  @default("2026-27")
+  classTeacherId String?
+  classTeacher Teacher? @relation("ClassTeacherOf", fields: [classTeacherId], references: [id], onDelete: SetNull)
+
+  students   Student[]
+  teachers   Teacher[] @relation("ClassTeachers")
+  attendance Attendance[]
+  exams      Exam[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("classes")
+}
+
+model Teacher {
+  id           String  @id @default(cuid())
+  userId       String  @unique
+  user         User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  employeeId   String  @unique
+  phone        String?
+  subject      String  // primary subject taught
+  qualification String?
+  joiningDate  DateTime?
+  salary       Int?    // monthly salary in INR
+
+  classes      Class[] @relation("ClassTeachers")
+  classTeacherOf Class[] @relation("ClassTeacherOf")
+  attendanceMarked Attendance[] @relation("MarkedBy")
+  marksEntered  Mark[] @relation("EnteredBy")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("teachers")
+}
+
+model Student {
+  id            String   @id @default(cuid())
+  userId        String?  @unique
+  user          User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  admissionNo   String   @unique
+  firstName     String
+  lastName      String
+  gender        Gender
+  dateOfBirth   DateTime
+  phone         String?
+  address       String?
+  guardianName  String?
+  guardianPhone String?
+  classId       String?
+  class         Class?   @relation(fields: [classId], references: [id], onDelete: SetNull)
+  admissionDate DateTime @default(now())
+
+  attendance Attendance[]
+  marks      Mark[]
+  fees       FeeRecord[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("students")
+}
+
+model Attendance {
+  id        String           @id @default(cuid())
+  studentId String
+  student   Student          @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  classId   String
+  class     Class            @relation(fields: [classId], references: [id], onDelete: Cascade)
+  date      DateTime         @db.Date
+  status    AttendanceStatus
+  markedById String?
+  markedBy  Teacher?         @relation("MarkedBy", fields: [markedById], references: [id], onDelete: SetNull)
+  remark    String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([studentId, date])
+  @@map("attendance")
+}
+
+model Exam {
+  id        String   @id @default(cuid())
+  name      String   // e.g. "Mid-Term Examination"
+  classId   String
+  class     Class    @relation(fields: [classId], references: [id], onDelete: Cascade)
+  subject   String
+  maxMarks  Int      @default(100)
+  examDate  DateTime @db.Date
+  term      String?  // e.g. "Term 1"
+
+  marks Mark[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("exams")
+}
+
+model Mark {
+  id        String  @id @default(cuid())
+  examId    String
+  exam      Exam    @relation(fields: [examId], references: [id], onDelete: Cascade)
+  studentId String
+  student   Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  marksObtained Float
+  enteredById String?
+  enteredBy Teacher? @relation("EnteredBy", fields: [enteredById], references: [id], onDelete: SetNull)
+  remark    String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([examId, studentId])
+  @@map("marks")
+}
+
+model FeeRecord {
+  id          String    @id @default(cuid())
+  studentId   String
+  student     Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  title       String    // e.g. "Tuition Fee — Term 1"
+  amount      Int       // in INR (paise not used; whole rupees)
+  dueDate     DateTime  @db.Date
+  status      FeeStatus @default(PENDING)
+  paidAmount  Int       @default(0)
+  paidAt      DateTime?
+  paymentMode PaymentMode?
+  receiptNo   String?   @unique
+  academicYear String   @default("2026-27")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("fee_records")
+}

@@ -1,0 +1,61 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --paper: #faf6ee;
+  --ink: #22301f;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  @apply bg-paper text-ink font-body antialiased;
+  background-image:
+    radial-gradient(ellipse at 20% 0%, rgba(184, 134, 47, 0.06), transparent 55%),
+    radial-gradient(ellipse at 90% 100%, rgba(29, 74, 53, 0.05), transparent 55%);
+}
+
+/* Subtle ledger ruling behind page headers */
+.ledger-rule {
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent 27px,
+    rgba(29, 74, 53, 0.07) 27px,
+    rgba(29, 74, 53, 0.07) 28px
+  );
+}
+
+/* Fine double border, like a bound register */
+.register-frame {
+  border: 1px solid #d9cfae;
+  outline: 3px double #d9cfae;
+  outline-offset: 4px;
+}
+
+.stamp {
+  @apply inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-semibold tracking-wide;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.6;
+}
+
+/* Print: receipts & report cards come out clean on white */
+@media print {
+  body {
+    background: #fff !important;
+    background-image: none !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+  .print-sheet {
+    box-shadow: none !important;
+    border: 1px solid #999 !important;
+  }
+}

@@ -1,0 +1,22 @@
+# PostgreSQL 15+ for EduManage local development
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: edumanage-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: edumanage
+      POSTGRES_PASSWORD: edumanage
+      POSTGRES_DB: edumanage
+    ports:
+      - "5432:5432"
+    volumes:
+      - edumanage-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U edumanage"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  edumanage-pgdata:
